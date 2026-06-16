@@ -115,3 +115,114 @@ async def evaluate_candidate(candidate: dict) -> dict:
         "latency": total_latency / num_items,
         "tokens": total_tokens / num_items
     }
+
+def compile_trace_tree() -> dict:
+    """Builds a hierarchical tree from the captured OpenTelemetry spans."""
+    exporter = telemetry._exporter
+    if exporter is None:
+        return {}
+    
+    spans = exporter.get_finished_spans()
+    if not spans:
+        return {}
+    
+    # 1. Map spans by span_id
+    span_map = {}
+    for span in spans:
+        span_id = span.context.span_id
+        # Convert span_id and parent_id to hex strings
+        span_id_hex = format(span_id, '016x')
+        parent_id_hex = format(span.parent.span_id, '016x') if span.parent else None
+        
+        attributes = dict(span.attributes)
+        # Clean up binary/JSON data in attributes to keep it readable
+        clean_attributes = {}
+        for k, v in attributes.items():
+            if isinstance(v, (str, int, float, bool)):
+                clean_attributes[k] = v
+            elif isinstance(v, (list, tuple)):
+                clean_attributes[k] = list(v)
+            else:
+                clean_attributes[k] = str(v)
+
+        span_map[span_id_hex] = {
+            "name": span.name,
+            "span_id": span_id_hex,
+            "parent_id": parent_id_hex,
+            "duration_ms": (span.end_time - span.start_time) / 1e6,
+            "attributes": clean_attributes,
+            "children": []
+        }
+    
+    # 2. Build hierarchy
+    roots = []
+    for s_id, node in span_map.items():
+        p_id = node["parent_id"]
+        if p_id and p_id in span_map:
+            span_map[p_id]["children"].append(node)
+        else:
+            roots.append(node)
+            
+    # Return the first root or a dummy root if multiple
+    return roots[0] if roots else {}
+
+async def run_single_query(candidate: dict, query_text: str) -> dict:
+    """Runs a single support query through the customer support agent using a prompt candidate.
+
+    Args:
+        candidate (dict): The prompt genome.
+        query_text (str): The raw customer query.
+
+    Returns:
+        dict: The result containing response, metrics, and structured span tree.
+    """
+    system_instruction = (
+        f"{candidate['base']}\n\n"
+        f"Formatting: {candidate['formatting']}\n\n"
+        f"Constraint: {candidate['reasoning']}"
+    )
+
+    agent = LlmAgent(
+        name="customer_support_agent",
+        model="mock-model",
+        instruction=system_instruction
+    )
+
+    telemetry.clear_spans()
+    user_msg = types.Content(
+        role="user",
+        parts=[types.Part(text=query_text)]
+    )
+
+    try:
+        async with InMemoryRunner(agent=agent) as runner:
+            runner.auto_create_session = True
+            
+            # InMemoryRunner.run returns a generator
+            list(runner.run(
+                user_id="playground_user",
+                session_id="playground_session",
+                new_message=user_msg
+            ))
+
+        # Retrieve metrics
+        metrics = telemetry.get_captured_metrics()
+        trace_tree = compile_trace_tree()
+
+        return {
+            "response_text": metrics["response_text"],
+            "latency_s": metrics["latency"],
+            "tokens": metrics["input_tokens"] + metrics["output_tokens"],
+            "input_tokens": metrics["input_tokens"],
+            "output_tokens": metrics["output_tokens"],
+            "trace_tree": trace_tree
+        }
+    except Exception as e:
+        return {
+            "response_text": f"Error executing agent: {e}",
+            "latency_s": 0.0,
+            "tokens": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "trace_tree": {}
+        }
