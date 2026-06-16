@@ -83,7 +83,7 @@ def calculate_crowding_distance(front_indices: list, population: list):
     num_members = len(front_indices)
     if num_members <= 2:
         for idx in front_indices:
-            population[idx]["crowding_distance"] = float('inf')
+            population[idx]["crowding_distance"] = 1e9
         return
         
     for idx in front_indices:
@@ -94,8 +94,8 @@ def calculate_crowding_distance(front_indices: list, population: list):
         sorted_indices = sorted(front_indices, key=lambda idx: population[idx]["metrics"][obj])
         
         # Boundaries get infinite distance
-        population[sorted_indices[0]]["crowding_distance"] = float('inf')
-        population[sorted_indices[-1]]["crowding_distance"] = float('inf')
+        population[sorted_indices[0]]["crowding_distance"] = 1e9
+        population[sorted_indices[-1]]["crowding_distance"] = 1e9
         
         min_val = population[sorted_indices[0]]["metrics"][obj]
         max_val = population[sorted_indices[-1]]["metrics"][obj]
