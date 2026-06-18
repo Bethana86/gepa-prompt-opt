@@ -131,17 +131,8 @@ async def optimize_stream_endpoint(pop_size: int = 8, generations: int = 5):
         media_type="text/event-stream"
     )
 
-# Fallback root path to serve UI
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    index_path = os.path.join("static", "index.html")
-    if os.path.exists(index_path):
-        with open(index_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    return HTMLResponse("<h2>Error: static/index.html not found. Please verify placement.</h2>")
-
-# Mount static files router
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mount static files router at the root to support relative paths
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=False)
