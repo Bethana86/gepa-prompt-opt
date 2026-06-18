@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Optimizer Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-dna DNA-icon"></i>
+            <h1>Prompt Optimizer</h1>
+        </div>
+        <div class="status-badge" id="system-status">
+            <span class="dot green"></span>
+            <span class="status-text">ADK Engine Ready</span>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- Section 1: Optimization Control and Progress -->
+        <section class="card control-card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-sliders"></i> Optimization Control</h2>
+            </div>
+            <div class="card-body">
+                <div class="control-row">
+                    <div class="control-group">
+                        <label for="pop-size">Population Size</label>
+                        <input type="number" id="pop-size" value="8" min="4" max="20">
+                    </div>
+                    <div class="control-group">
+                        <label for="generations">Generations</label>
+                        <input type="number" id="generations" value="5" min="2" max="15">
+                    </div>
+                </div>
+                <button id="btn-optimize" class="btn btn-primary btn-glow">
+                    <i class="fa-solid fa-play"></i> Run Prompt Optimization
+                </button>
+
+                <div class="console-box">
+                    <div class="console-header">
+                        <span><i class="fa-solid fa-terminal"></i> Status Stream</span>
+                        <span id="console-pulse" class="pulse-dot hide"></span>
+                    </div>
+                    <div class="console-content" id="console-logs">
+                        <span class="log-info">Ready to start. Adjust parameters and click run.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Real-time Population Visualizer -->
+        <section class="card results-card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-chart-line"></i> Pareto Front & Convergence</h2>
+            </div>
+            <div class="card-body chart-body">
+                <div class="chart-container">
+                    <canvas id="paretoChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Evolving Population Table -->
+        <section class="card population-card full-width">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-users-viewfinder"></i> Evolving Population (NSGA-II)</h2>
+                <div class="generation-indicator" id="gen-counter">Gen: -</div>
+            </div>
+            <div class="card-body table-body">
+                <div class="table-wrapper">
+                    <table id="population-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Base Instruction</th>
+                                <th>Formatting Rule</th>
+                                <th>Reasoning Style</th>
+                                <th>Accuracy</th>
+                                <th>Latency</th>
+                                <th>Tokens</th>
+                                <th>Rank</th>
+                            </tr>
+                        </thead>
+                        <tbody id="population-list">
+                            <tr>
+                                <td colspan="8" class="text-center empty-state">No active optimization. Run to view evolving prompt genomes.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: support playground (Side-by-side agent runs) -->
+        <section class="card playground-card full-width">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-comments"></i> Support Agent Playground & Live Telemetry</h2>
+            </div>
+            <div class="card-body playground-body">
+                <div class="playground-setup">
+                    <div class="select-wrapper">
+                        <label for="optimized-select">Select Optimized Prompt Candidate</label>
+                        <select id="optimized-select" disabled>
+                            <option value="">-- Complete optimization first --</option>
+                        </select>
+                    </div>
+                    <div class="query-input-group">
+                        <label for="customer-query">Customer Query</label>
+                        <div class="query-input-row">
+                            <input type="text" id="customer-query" value="Hey, I received a billing charge on my card but I cancelled my subscription last week! Refund please." placeholder="Type customer query here...">
+                            <button id="btn-run-agent" class="btn btn-secondary"><i class="fa-solid fa-paper-plane"></i> Run Agent</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="playground-comparison">
+                    <!-- Before Optimization (Original Prompt) -->
+                    <div class="playground-column before">
+                        <div class="column-header">
+                            <h3><span class="badge red">Original Prompt</span></h3>
+                            <div class="metric-row">
+                                <span class="metric" id="metrics-orig-latency"><i class="fa-regular fa-clock"></i> Latency: -</span>
+                                <span class="metric" id="metrics-orig-cost"><i class="fa-solid fa-coins"></i> Tokens: -</span>
+                            </div>
+                        </div>
+                        <div class="column-body">
+                            <div class="prompt-preview">
+                                <strong>Prompt Instruction:</strong>
+                                <pre id="prompt-orig-text">Loading seed prompt...</pre>
+                            </div>
+                            <div class="response-box">
+                                <strong>Agent Response:</strong>
+                                <div class="response-content" id="agent-orig-response">Click "Run Agent" to execute query.</div>
+                            </div>
+                            <div class="trace-box">
+                                <strong>OpenTelemetry Trace Span Hierarchy:</strong>
+                                <div class="trace-tree" id="trace-orig-tree">Trace will load after execution.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- After Optimization (Best Pareto Prompt) -->
+                    <div class="playground-column after">
+                        <div class="column-header">
+                            <h3><span class="badge green">Optimized Prompt</span></h3>
+                            <div class="metric-row">
+                                <span class="metric" id="metrics-opt-latency"><i class="fa-regular fa-clock"></i> Latency: -</span>
+                                <span class="metric" id="metrics-opt-cost"><i class="fa-solid fa-coins"></i> Tokens: -</span>
+                            </div>
+                        </div>
+                        <div class="column-body">
+                            <div class="prompt-preview">
+                                <strong>Prompt Instruction:</strong>
+                                <pre id="prompt-opt-text">Complete optimization to select a candidate.</pre>
+                            </div>
+                            <div class="response-box">
+                                <strong>Agent Response:</strong>
+                                <div class="response-content" id="agent-opt-response">Click "Run Agent" to execute query.</div>
+                            </div>
+                            <div class="trace-box">
+                                <strong>OpenTelemetry Trace Span Hierarchy:</strong>
+                                <div class="trace-tree" id="trace-opt-tree">Trace will load after execution.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal for showing span details -->
+    <div class="modal" id="span-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-span-name">Span Details</h3>
+                <span class="close-modal" id="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p><strong>Span ID:</strong> <span id="modal-span-id">-</span></p>
+                <p><strong>Parent ID:</strong> <span id="modal-parent-id">-</span></p>
+                <p><strong>Duration:</strong> <span id="modal-duration">-</span></p>
+                <div class="attributes-wrapper">
+                    <strong>Attributes:</strong>
+                    <pre id="modal-attributes">{}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- App Logic -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
