@@ -72,3 +72,19 @@ The prototype was developed in a new subdirectory under scratch:
 - [optimizer.py](file:///C:/Users/ASUA/.gemini/antigravity/scratch/gepa-prompt-opt/optimizer.py): Pareto sorting, crowding distance, crossover, and mutation operators.
 - [main.py](file:///C:/Users/ASUA/.gemini/antigravity/scratch/gepa-prompt-opt/main.py): Driver script for running the optimization.
 - [README.md](file:///C:/Users/ASUA/.gemini/antigravity/scratch/gepa-prompt-opt/README.md): Setup and user guidelines.
+
+---
+
+## 5. GitHub Pages Deployment Configuration
+
+To see the UI dashboard live on GitHub Pages, configure your repository settings as follows:
+
+1. Go to your repository on GitHub: **[Bethana86/gepa-prompt-opt](https://github.com/Bethana86/gepa-prompt-opt)**.
+2. Click the **Settings** tab at the top.
+3. In the left sidebar under "Code and automation", select **Pages**.
+4. In the **Build and deployment** section, locate the **Branch** dropdown under "Source".
+5. Change the branch selection from `main` to **`gh-pages`** (keeping the folder as `/ (root)`).
+6. Click **Save**.
+
+Once configured, the page will rebuild and the premium UI will be fully visible at:
+👉 **[https://bethana86.github.io/gepa-prompt-opt/](https://bethana86.github.io/gepa-prompt-opt/)**
